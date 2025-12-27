@@ -65,7 +65,10 @@ const App: React.FC = () => {
 
   const startBasicQuiz = () => {
     const filtered = questions.filter(q => q.category === selectedCategory);
-    if (filtered.length === 0) return alert(lang === 'ZH' ? "此分類沒有題目！" : "No questions!");
+    if (filtered.length === 0) {
+      alert(lang === 'ZH' ? "此分類沒有題目！" : "No questions in this category!");
+      return;
+    }
     setActiveQuiz({
       mode: QuizMode.BASIC,
       questions: [...filtered].sort(() => Math.random() - 0.5).slice(0, 10)
@@ -73,12 +76,23 @@ const App: React.FC = () => {
   };
 
   const startAdvancedQuiz = async () => {
+    const base = questions.filter(q => q.category === selectedCategory);
+    if (base.length === 0) {
+      alert(lang === 'ZH' ? "請先新增基礎題目！" : "Add base questions first!");
+      return;
+    }
+    
     setIsGenerating(true);
     try {
-      const base = questions.filter(q => q.category === selectedCategory);
-      if (base.length === 0) return alert(lang === 'ZH' ? "請先新增基礎題目！" : "Add base questions first!");
       const aiGenerated = await generateAIQuestions(base, selectedCategory);
-      if (aiGenerated.length > 0) setActiveQuiz({ mode: QuizMode.ADVANCED, questions: aiGenerated });
+      if (aiGenerated && aiGenerated.length > 0) {
+        setActiveQuiz({ mode: QuizMode.ADVANCED, questions: aiGenerated });
+      } else {
+        alert(lang === 'ZH' ? "AI 生成失敗，請檢查 API Key 或重試。" : "AI Generation failed. Check API Key.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(lang === 'ZH' ? "發生錯誤！" : "An error occurred!");
     } finally {
       setIsGenerating(false);
     }
@@ -107,6 +121,20 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
+      {/* AI 生成載入畫面 */}
+      {isGenerating && (
+        <div className="fixed inset-0 bg-blue-600/90 backdrop-blur-md z-[200] flex flex-col items-center justify-center p-6 text-center text-white">
+          <div className="text-8xl mb-8 animate-bounce">✨</div>
+          <h2 className="text-4xl font-black mb-4 kid-font">{t.summoningAi}</h2>
+          <p className="text-xl opacity-90 max-w-md leading-relaxed">{t.generatingDesc}</p>
+          <div className="mt-12 flex space-x-3">
+             <div className="w-4 h-4 bg-white rounded-full animate-pulse"></div>
+             <div className="w-4 h-4 bg-white rounded-full animate-pulse delay-75"></div>
+             <div className="w-4 h-4 bg-white rounded-full animate-pulse delay-150"></div>
+          </div>
+        </div>
+      )}
+
       <header className="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50 px-6 py-4 flex flex-wrap gap-4 justify-between items-center shadow-sm">
         <h1 className="text-2xl font-bold text-blue-600 kid-font flex items-center">
           <span className="mr-3 text-3xl">📚</span> {t.appName}
@@ -126,22 +154,45 @@ const App: React.FC = () => {
             <h2 className="text-5xl font-bold text-slate-800 kid-font mb-6">{t.readyAdventure}</h2>
             <p className="text-slate-500 text-xl font-medium">{t.pickTopic}</p>
           </div>
+          
           <div className="bg-white p-8 rounded-[2.5rem] shadow-xl mb-16 border border-blue-50">
             <h3 className="text-xl font-bold mb-8 text-slate-700">{t.step1}</h3>
             <div className="flex flex-wrap gap-3">
-              {dynamicCategories.map(([cat, count]) => (
-                <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-6 py-3 rounded-2xl border-2 transition-all font-bold text-sm ${selectedCategory === cat ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-100 text-slate-500 bg-slate-50/50'}`}>
+              {dynamicCategories.length > 0 ? dynamicCategories.map(([cat, count]) => (
+                <button 
+                  key={cat} 
+                  onClick={() => setSelectedCategory(cat)} 
+                  className={`px-6 py-3 rounded-2xl border-2 transition-all font-bold text-sm ${selectedCategory === cat ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-100 text-slate-500 bg-slate-50/50'}`}
+                >
                   {cat} ({count})
                 </button>
-              ))}
+              )) : (
+                <p className="text-slate-400 italic">No topics available. Add some in Parent Mode!</p>
+              )}
             </div>
           </div>
-          <div className="flex justify-center">
-            <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border-b-[12px] border-green-500 cursor-pointer max-w-md w-full" onClick={startBasicQuiz}>
-              <div className="text-5xl mb-8">📖</div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* 練習模式 */}
+            <div 
+              className="bg-white p-10 rounded-[2.5rem] shadow-xl border-b-[12px] border-green-500 cursor-pointer hover:translate-y-[-8px] transition-all group" 
+              onClick={startBasicQuiz}
+            >
+              <div className="text-5xl mb-8 group-hover:scale-110 transition-transform">📖</div>
               <h3 className="text-2xl font-bold text-slate-800 mb-4">{t.schoolPractice}</h3>
-              <p className="text-slate-500 mb-8">{t.schoolPracticeDesc}</p>
-              <button className="w-full bg-green-500 text-white font-bold py-4 rounded-2xl text-lg">{t.startNow}</button>
+              <p className="text-slate-500 mb-8 h-12">{t.schoolPracticeDesc}</p>
+              <button className="w-full bg-green-500 text-white font-black py-4 rounded-2xl text-lg shadow-lg shadow-green-100">{t.startNow}</button>
+            </div>
+
+            {/* AI 挑戰模式 */}
+            <div 
+              className="bg-white p-10 rounded-[2.5rem] shadow-xl border-b-[12px] border-purple-500 cursor-pointer hover:translate-y-[-8px] transition-all group" 
+              onClick={startAdvancedQuiz}
+            >
+              <div className="text-5xl mb-8 group-hover:scale-110 transition-transform">🧙‍♂️</div>
+              <h3 className="text-2xl font-bold text-slate-800 mb-4">{t.aiChallenge}</h3>
+              <p className="text-slate-500 mb-8 h-12">{t.aiChallengeDesc}</p>
+              <button className="w-full bg-purple-600 text-white font-black py-4 rounded-2xl text-lg shadow-lg shadow-purple-100">{t.unlockChallenge}</button>
             </div>
           </div>
         </main>
@@ -152,7 +203,7 @@ const App: React.FC = () => {
             questions={questions} 
             onAdd={q => setQuestions([...questions, q])}
             onUpdate={updated => setQuestions(questions.map(q => q.id === updated.id ? updated : q))}
-            onImport={qs => setQuestions(qs)} // 同步時直接取代
+            onImport={qs => setQuestions(qs)}
             onDelete={handleDeleteQuestion}
             lang={lang}
           />

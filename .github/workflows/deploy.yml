@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          # 移除 cache: 'npm' 以避免因缺少 package-lock.json 導致的錯誤
 
       - name: Install dependencies
         run: npm install
@@ -30,8 +30,6 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          # 如果您希望在構建時寫入 API KEY（不推薦用於開源倉庫）
-          # 請在 GitHub Repo Settings -> Secrets -> Actions 新增 API_KEY
           API_KEY: ${{ secrets.API_KEY }}
 
       - name: Setup Pages
