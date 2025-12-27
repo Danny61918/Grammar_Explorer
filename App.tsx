@@ -6,7 +6,6 @@ import { Language, translations } from './translations';
 import Quiz from './components/Quiz';
 import ParentDashboard from './components/ParentDashboard';
 import QuestionManager from './components/QuestionManager';
-import { generateAIQuestions } from './services/geminiService';
 
 const App: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>(() => {
@@ -31,7 +30,6 @@ const App: React.FC = () => {
     questions: Question[];
   } | null>(null);
   
-  const [isGenerating, setIsGenerating] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   const dynamicCategories = useMemo(() => {
@@ -75,29 +73,6 @@ const App: React.FC = () => {
     });
   };
 
-  const startAdvancedQuiz = async () => {
-    const base = questions.filter(q => q.category === selectedCategory);
-    if (base.length === 0) {
-      alert(lang === 'ZH' ? "請先新增基礎題目！" : "Add base questions first!");
-      return;
-    }
-    
-    setIsGenerating(true);
-    try {
-      const aiGenerated = await generateAIQuestions(base, selectedCategory);
-      if (aiGenerated && aiGenerated.length > 0) {
-        setActiveQuiz({ mode: QuizMode.ADVANCED, questions: aiGenerated });
-      } else {
-        alert(lang === 'ZH' ? "AI 生成失敗，請檢查 API Key 或重試。" : "AI Generation failed. Check API Key.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert(lang === 'ZH' ? "發生錯誤！" : "An error occurred!");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   const handleDeleteQuestion = (id: string) => {
     if (id === 'all') {
       if (window.confirm(lang === 'ZH' ? "確定要清空所有題目嗎？" : "Clear all questions?")) {
@@ -121,20 +96,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      {/* AI 生成載入畫面 */}
-      {isGenerating && (
-        <div className="fixed inset-0 bg-blue-600/90 backdrop-blur-md z-[200] flex flex-col items-center justify-center p-6 text-center text-white">
-          <div className="text-8xl mb-8 animate-bounce">✨</div>
-          <h2 className="text-4xl font-black mb-4 kid-font">{t.summoningAi}</h2>
-          <p className="text-xl opacity-90 max-w-md leading-relaxed">{t.generatingDesc}</p>
-          <div className="mt-12 flex space-x-3">
-             <div className="w-4 h-4 bg-white rounded-full animate-pulse"></div>
-             <div className="w-4 h-4 bg-white rounded-full animate-pulse delay-75"></div>
-             <div className="w-4 h-4 bg-white rounded-full animate-pulse delay-150"></div>
-          </div>
-        </div>
-      )}
-
       <header className="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50 px-6 py-4 flex flex-wrap gap-4 justify-between items-center shadow-sm">
         <h1 className="text-2xl font-bold text-blue-600 kid-font flex items-center">
           <span className="mr-3 text-3xl">📚</span> {t.appName}
@@ -150,13 +111,13 @@ const App: React.FC = () => {
 
       {appMode === AppMode.LEARNER ? (
         <main className="max-w-4xl mx-auto px-6 py-12">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h2 className="text-5xl font-bold text-slate-800 kid-font mb-6">{t.readyAdventure}</h2>
             <p className="text-slate-500 text-xl font-medium">{t.pickTopic}</p>
           </div>
           
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-xl mb-16 border border-blue-50">
-            <h3 className="text-xl font-bold mb-8 text-slate-700">{t.step1}</h3>
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-xl mb-12 border border-blue-50">
+            <h3 className="text-xl font-bold mb-6 text-slate-700">{t.step1}</h3>
             <div className="flex flex-wrap gap-3">
               {dynamicCategories.length > 0 ? dynamicCategories.map(([cat, count]) => (
                 <button 
@@ -172,27 +133,18 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* 練習模式 */}
+          <div className="flex justify-center">
+            {/* 僅顯示練習模式 */}
             <div 
-              className="bg-white p-10 rounded-[2.5rem] shadow-xl border-b-[12px] border-green-500 cursor-pointer hover:translate-y-[-8px] transition-all group" 
+              className="bg-white p-10 rounded-[3rem] shadow-2xl border-b-[16px] border-green-500 cursor-pointer hover:translate-y-[-10px] transition-all group w-full max-w-xl text-center" 
               onClick={startBasicQuiz}
             >
-              <div className="text-5xl mb-8 group-hover:scale-110 transition-transform">📖</div>
-              <h3 className="text-2xl font-bold text-slate-800 mb-4">{t.schoolPractice}</h3>
-              <p className="text-slate-500 mb-8 h-12">{t.schoolPracticeDesc}</p>
-              <button className="w-full bg-green-500 text-white font-black py-4 rounded-2xl text-lg shadow-lg shadow-green-100">{t.startNow}</button>
-            </div>
-
-            {/* AI 挑戰模式 */}
-            <div 
-              className="bg-white p-10 rounded-[2.5rem] shadow-xl border-b-[12px] border-purple-500 cursor-pointer hover:translate-y-[-8px] transition-all group" 
-              onClick={startAdvancedQuiz}
-            >
-              <div className="text-5xl mb-8 group-hover:scale-110 transition-transform">🧙‍♂️</div>
-              <h3 className="text-2xl font-bold text-slate-800 mb-4">{t.aiChallenge}</h3>
-              <p className="text-slate-500 mb-8 h-12">{t.aiChallengeDesc}</p>
-              <button className="w-full bg-purple-600 text-white font-black py-4 rounded-2xl text-lg shadow-lg shadow-purple-100">{t.unlockChallenge}</button>
+              <div className="text-7xl mb-8 group-hover:scale-110 transition-transform inline-block">📖</div>
+              <h3 className="text-3xl font-bold text-slate-800 mb-4">{t.schoolPractice}</h3>
+              <p className="text-slate-500 mb-10 text-lg leading-relaxed">{t.schoolPracticeDesc}</p>
+              <button className="w-full bg-green-500 text-white font-black py-5 rounded-3xl text-2xl shadow-xl shadow-green-100 transition-all active:scale-95">
+                {t.startNow}
+              </button>
             </div>
           </div>
         </main>
