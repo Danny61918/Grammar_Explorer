@@ -1,6 +1,8 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Question, QuestionType } from "../types";
+import { Question } from "../types";
+
+declare const process: { env: { [key: string]: string | undefined } };
 
 // 輔助函式：取得目前可用的 API Key
 const getApiKey = () => {
