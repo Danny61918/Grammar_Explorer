@@ -1,0 +1,7 @@
+{
+  "name": "Grammar Explorer - Fun English Learning",
+  "description": "An interactive English grammar learning app for children featuring a school question bank, AI-powered advanced practice modes, and a detailed parent dashboard for progress tracking.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
