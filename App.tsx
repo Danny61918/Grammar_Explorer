@@ -134,7 +134,6 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex justify-center">
-            {/* 僅顯示練習模式 */}
             <div 
               className="bg-white p-10 rounded-[3rem] shadow-2xl border-b-[16px] border-green-500 cursor-pointer hover:translate-y-[-10px] transition-all group w-full max-w-xl text-center" 
               onClick={startBasicQuiz}
