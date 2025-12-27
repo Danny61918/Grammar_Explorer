@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Question, QuestionType, UserRecord } from '../types';
+import { Question, UserRecord } from '../types';
 import { Language, translations } from '../translations';
 
 interface QuizProps {
@@ -19,6 +19,7 @@ const Quiz: React.FC<QuizProps> = ({ questions, onComplete, onExit, lang }) => {
   const [isFinished, setIsFinished] = useState(false);
 
   const currentQuestion = questions[currentIndex];
+  const isSpelling = currentQuestion.type === 'spelling_correction';
 
   const handleAnswerSubmit = () => {
     if (!selectedAnswer.trim()) return;
@@ -61,8 +62,6 @@ const Quiz: React.FC<QuizProps> = ({ questions, onComplete, onExit, lang }) => {
     );
   }
 
-  const isSpelling = currentQuestion.type === 'spelling_correction';
-
   return (
     <div className="max-w-2xl mx-auto p-4 md:p-8">
       <div className="mb-6 flex justify-between items-center bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
@@ -79,7 +78,7 @@ const Quiz: React.FC<QuizProps> = ({ questions, onComplete, onExit, lang }) => {
           </span>
           {currentQuestion.isAI && <span className="bg-purple-100 text-purple-700 text-xs font-black px-3 py-1 rounded-full uppercase">✨ AI</span>}
           <span className="bg-slate-100 text-slate-500 text-xs font-black px-3 py-1 rounded-full uppercase">
-            {currentQuestion.type}
+            {isSpelling ? '⌨️ Spelling' : '🔘 ' + currentQuestion.type}
           </span>
         </div>
         
@@ -89,21 +88,28 @@ const Quiz: React.FC<QuizProps> = ({ questions, onComplete, onExit, lang }) => {
 
         <div className="space-y-4 relative z-10">
           {isSpelling ? (
-            <div className="space-y-4">
-              <input 
-                type="text"
-                disabled={showFeedback}
-                value={selectedAnswer}
-                onChange={(e) => setSelectedAnswer(e.target.value)}
-                placeholder="Type your answer here..."
-                className={`w-full p-6 text-2xl font-bold rounded-3xl border-4 outline-none transition-all ${
-                  showFeedback 
-                  ? 'bg-slate-50 border-slate-200' 
-                  : 'border-blue-100 focus:border-blue-500 bg-blue-50/30'
-                }`}
-                onKeyPress={(e) => e.key === 'Enter' && !showFeedback && handleAnswerSubmit()}
-              />
-              <p className="text-sm text-slate-400 font-medium italic">Hint: Look at the brackets in the question.</p>
+            <div className="space-y-6">
+              <div className="relative">
+                <input 
+                  type="text"
+                  autoFocus
+                  disabled={showFeedback}
+                  value={selectedAnswer}
+                  onChange={(e) => setSelectedAnswer(e.target.value)}
+                  placeholder="Type the word here..."
+                  className={`w-full p-8 text-3xl font-bold rounded-3xl border-4 outline-none transition-all text-center ${
+                    showFeedback 
+                    ? 'bg-slate-50 border-slate-200 text-slate-400' 
+                    : 'border-blue-100 focus:border-blue-500 bg-blue-50/30 text-blue-900 shadow-lg focus:shadow-blue-100'
+                  }`}
+                  onKeyPress={(e) => e.key === 'Enter' && !showFeedback && handleAnswerSubmit()}
+                />
+                {!showFeedback && (
+                   <p className="mt-4 text-center text-slate-400 font-medium animate-pulse">
+                     {lang === 'ZH' ? '⌨️ 請在上方框框輸入正確單字' : '⌨️ Please type the word above'}
+                   </p>
+                )}
+              </div>
             </div>
           ) : (
             currentQuestion.options?.map((option, idx) => (
@@ -146,10 +152,15 @@ const Quiz: React.FC<QuizProps> = ({ questions, onComplete, onExit, lang }) => {
             </div>
             
             <div className="mb-6 space-y-2">
-              <p className="text-slate-600 font-bold">
-                Correct Answer: <span className="text-green-600 underline decoration-2">{currentQuestion.answer}</span>
+              <p className="text-slate-600 font-bold text-xl">
+                {lang === 'ZH' ? '正確答案：' : 'Correct Answer: '} 
+                <span className="text-green-600 underline underline-offset-4 decoration-4">{currentQuestion.answer}</span>
               </p>
-              <p className="text-slate-700 leading-relaxed font-medium">{currentQuestion.explanation}</p>
+              {currentQuestion.explanation && (
+                <p className="text-slate-700 leading-relaxed font-medium bg-white/50 p-4 rounded-xl mt-4">
+                  {currentQuestion.explanation}
+                </p>
+              )}
             </div>
 
             <button
@@ -169,7 +180,7 @@ const Quiz: React.FC<QuizProps> = ({ questions, onComplete, onExit, lang }) => {
               : 'bg-slate-100 text-slate-400 cursor-not-allowed'
             }`}
           >
-            {t.checkAnswer}
+            {isSpelling ? (lang === 'ZH' ? '完成輸入' : 'Finish Typing') : t.checkAnswer}
           </button>
         )}
       </div>

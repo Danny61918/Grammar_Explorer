@@ -3,14 +3,14 @@ export type Language = 'EN' | 'ZH';
 
 export const translations = {
   EN: {
-    // ... 保持現有翻譯
     appName: "Grammar Explorer",
     learnerMode: "Learner Mode",
     parentMode: "Parent Mode",
     langSwitch: "中文",
     readyAdventure: "Ready for an Adventure? 🚀",
-    pickTopic: "Pick a topic and start practicing your English skills!",
+    pickTopic: "Pick a topic or just jump right in!",
     step1: "Step 1: Choose Your Mission",
+    allTopics: "🎲 Mix All",
     schoolPractice: "Practice Mode",
     schoolPracticeDesc: "Practice with questions from your own question bank.",
     aiChallenge: "AI Master Challenge",
@@ -95,16 +95,16 @@ export const translations = {
     invalidConfig: "Invalid configuration format."
   },
   ZH: {
-    // ... 保持現有翻譯
     appName: "語法探險家",
     learnerMode: "學生模式",
     parentMode: "家長模式",
     langSwitch: "English",
     readyAdventure: "準備好開始探險了嗎？🚀",
-    pickTopic: "選擇一個主題，開始練習你的英文技巧！",
+    pickTopic: "選個主題，或直接開始隨機挑戰！",
     step1: "第一步：選擇你的任務",
+    allTopics: "🎲 全部隨機",
     schoolPractice: "練習模式",
-    schoolPracticeDesc: "使用你上傳的題庫進行基礎練習。",
+    schoolPracticeDesc: "從題庫中隨機挑選題目進行練習。",
     aiChallenge: "AI 大師挑戰",
     aiChallengeDesc: "AI 根據你的學校課程生成全新的挑戰題。",
     startNow: "現在開始",

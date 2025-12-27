@@ -30,7 +30,8 @@ const App: React.FC = () => {
     questions: Question[];
   } | null>(null);
   
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  // 預設為 'ALL' 代表全部主題
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
   const dynamicCategories = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -41,11 +42,12 @@ const App: React.FC = () => {
     return Object.entries(counts).sort(([a], [b]) => a.localeCompare(b));
   }, [questions]);
 
+  // 如果發現目前的選擇不在列表中，且不是 'ALL'，則重置回 'ALL'
   useEffect(() => {
-    if (dynamicCategories.length > 0 && !selectedCategory) {
-      setSelectedCategory(dynamicCategories[0][0]);
+    if (selectedCategory !== 'ALL' && !dynamicCategories.find(([cat]) => cat === selectedCategory)) {
+      setSelectedCategory('ALL');
     }
-  }, [dynamicCategories]);
+  }, [dynamicCategories, selectedCategory]);
 
   useEffect(() => {
     localStorage.setItem('ge_questions', JSON.stringify(questions));
@@ -62,11 +64,16 @@ const App: React.FC = () => {
   const toggleLang = () => setLang(prev => prev === 'EN' ? 'ZH' : 'EN');
 
   const startBasicQuiz = () => {
-    const filtered = questions.filter(q => q.category === selectedCategory);
+    let filtered = questions;
+    if (selectedCategory !== 'ALL') {
+      filtered = questions.filter(q => q.category === selectedCategory);
+    }
+    
     if (filtered.length === 0) {
-      alert(lang === 'ZH' ? "此分類沒有題目！" : "No questions in this category!");
+      alert(lang === 'ZH' ? "題庫中沒有題目！" : "No questions available!");
       return;
     }
+
     setActiveQuiz({
       mode: QuizMode.BASIC,
       questions: [...filtered].sort(() => Math.random() - 0.5).slice(0, 10)
@@ -119,6 +126,14 @@ const App: React.FC = () => {
           <div className="bg-white p-8 rounded-[2.5rem] shadow-xl mb-12 border border-blue-50">
             <h3 className="text-xl font-bold mb-6 text-slate-700">{t.step1}</h3>
             <div className="flex flex-wrap gap-3">
+              {/* 全部隨機按鈕 */}
+              <button 
+                onClick={() => setSelectedCategory('ALL')} 
+                className={`px-6 py-3 rounded-2xl border-2 transition-all font-bold text-sm ${selectedCategory === 'ALL' ? 'border-orange-400 bg-orange-50 text-orange-700' : 'border-slate-100 text-slate-500 bg-slate-50/50'}`}
+              >
+                {t.allTopics}
+              </button>
+              
               {dynamicCategories.length > 0 ? dynamicCategories.map(([cat, count]) => (
                 <button 
                   key={cat} 
@@ -138,8 +153,12 @@ const App: React.FC = () => {
               className="bg-white p-10 rounded-[3rem] shadow-2xl border-b-[16px] border-green-500 cursor-pointer hover:translate-y-[-10px] transition-all group w-full max-w-xl text-center" 
               onClick={startBasicQuiz}
             >
-              <div className="text-7xl mb-8 group-hover:scale-110 transition-transform inline-block">📖</div>
-              <h3 className="text-3xl font-bold text-slate-800 mb-4">{t.schoolPractice}</h3>
+              <div className="text-7xl mb-8 group-hover:scale-110 transition-transform inline-block">
+                {selectedCategory === 'ALL' ? '🎲' : '📖'}
+              </div>
+              <h3 className="text-3xl font-bold text-slate-800 mb-4">
+                {selectedCategory === 'ALL' ? t.allTopics : selectedCategory + ' ' + t.schoolPractice}
+              </h3>
               <p className="text-slate-500 mb-10 text-lg leading-relaxed">{t.schoolPracticeDesc}</p>
               <button className="w-full bg-green-500 text-white font-black py-5 rounded-3xl text-2xl shadow-xl shadow-green-100 transition-all active:scale-95">
                 {t.startNow}
