@@ -15,7 +15,6 @@ interface QuestionManagerProps {
 
 const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onAdd, onUpdate, onImport, onDelete, lang }) => {
   const t = translations[lang];
-  const [importText, setImportText] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showMagicScan, setShowMagicScan] = useState(false);
@@ -25,6 +24,7 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onAdd, onU
   const [ocrResults, setOcrResults] = useState<Question[]>([]);
   const formRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const configInputRef = useRef<HTMLInputElement>(null);
   
   const [cloudSettings, setCloudSettings] = useState(() => {
     const saved = localStorage.getItem('ge_cloud_settings');
@@ -101,7 +101,7 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onAdd, onU
           onImport(cloudQuestions);
           alert(`${t.syncSuccess} (${cloudQuestions.length} questions)`);
         } else {
-          alert(lang === 'ZH' ? "找到資料但沒有有效的題目內容（請檢查 C 欄與 E 欄）。" : "No valid questions found in data rows.");
+          alert(lang === 'ZH' ? "找到資料但沒有有效的題目內容。" : "No valid questions found.");
         }
       } else {
         alert(lang === 'ZH' ? "此範圍內沒有任何資料。" : "No data found in this range.");
@@ -112,6 +112,48 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onAdd, onU
     } finally {
       setIsSyncing(false);
     }
+  };
+
+  // 匯入設定檔功能
+  const handleImportConfigFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        let config: any = {};
+        
+        // 嘗試解析 JSON
+        if (content.trim().startsWith('{')) {
+          config = JSON.parse(content);
+        } else {
+          // 嘗試按行解析 TXT (KEY=VALUE 格式)
+          content.split('\n').forEach(line => {
+            const [key, value] = line.split('=').map(s => s.trim());
+            if (key === 'API_KEY') config.apiKey = value;
+            if (key === 'SHEET_ID') config.sheetId = value;
+            if (key === 'RANGE') config.range = value;
+          });
+        }
+
+        if (config.apiKey || config.sheetId) {
+          setCloudSettings({
+            apiKey: config.apiKey || cloudSettings.apiKey,
+            sheetId: config.sheetId || cloudSettings.sheetId,
+            range: config.range || cloudSettings.range
+          });
+          alert(lang === 'ZH' ? "設定檔匯入成功！" : "Config imported successfully!");
+        } else {
+          throw new Error("No valid keys found");
+        }
+      } catch (err) {
+        alert(t.invalidConfig);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset input
   };
 
   const handleMagicScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,10 +191,11 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onAdd, onU
 
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-8">
+      {/* 標題區 */}
       <div className="flex flex-wrap gap-4 justify-between items-center mb-8">
         <div>
           <h2 className="text-3xl font-bold text-slate-800 kid-font">{t.manageBank}</h2>
-          <p className="text-slate-500 text-sm">先使用魔法掃描獲取題目，校對後複製到 Google Sheets 維護。</p>
+          <p className="text-slate-500 text-sm">手動輸入或從 Google Sheets 同步您的教學內容。</p>
         </div>
         <div className="flex space-x-3">
           <button onClick={() => setShowMagicScan(true)} className="bg-purple-600 text-white px-5 py-2.5 rounded-xl hover:bg-purple-700 font-bold shadow-lg flex items-center transition-all active:scale-95">
@@ -166,9 +209,18 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onAdd, onU
 
       {/* 雲端同步卡片 */}
       <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border-t-8 border-green-500 mb-10">
-        <div className="flex items-center mb-6">
-           <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3 text-xl">☁️</div>
-           <h3 className="text-xl font-bold text-slate-800">{t.cloudSync}</h3>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+           <div className="flex items-center">
+             <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3 text-xl">☁️</div>
+             <h3 className="text-xl font-bold text-slate-800">{t.cloudSync}</h3>
+           </div>
+           <button 
+             onClick={() => configInputRef.current?.click()}
+             className="text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl transition-all border border-slate-200"
+           >
+             📁 {t.importConfig}
+           </button>
+           <input type="file" accept=".txt,.json" className="hidden" ref={configInputRef} onChange={handleImportConfigFile} />
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -187,7 +239,7 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onAdd, onU
              <input 
                type="text" 
                className="w-full p-3 bg-slate-50 border-2 border-transparent focus:border-green-400 rounded-xl outline-none transition-all" 
-               placeholder="試算表 ID" 
+               placeholder="Spreadsheet ID" 
                value={cloudSettings.sheetId}
                onChange={e => setCloudSettings({...cloudSettings, sheetId: e.target.value})}
              />
@@ -220,19 +272,17 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onAdd, onU
           </button>
         </div>
         
-        {/* 除錯清單 */}
         <div className="mt-8 p-6 bg-slate-50 rounded-2xl border border-slate-100">
-           <p className="text-xs font-bold text-slate-400 uppercase mb-3">排錯檢查清單 (Troubleshooting):</p>
-           <ul className="text-xs text-slate-600 space-y-2 list-disc ml-4">
-             <li>試算表需設定為「知道連結的任何人都可以檢視」。</li>
-             <li>必須在 Google Cloud 啟用 「Google Sheets API」。</li>
-             <li>分頁名稱必須正確（例如：<code className="bg-white px-1 font-bold">工作表1!A2:F</code>）。</li>
-             <li>欄位順序：A分類, B類型, C題目, D選項, E答案, F解析。</li>
-           </ul>
+           <p className="text-xs font-bold text-slate-400 uppercase mb-3">設定檔範例 (Config File Example):</p>
+           <div className="bg-slate-800 text-green-400 p-4 rounded-xl font-mono text-xs overflow-x-auto">
+             API_KEY=your_key_here<br/>
+             SHEET_ID=your_id_here<br/>
+             RANGE=Sheet1!A2:F
+           </div>
         </div>
       </div>
 
-      {/* 其他 UI 保持不變... */}
+      {/* 魔法掃描彈窗 */}
       {showMagicScan && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
@@ -276,6 +326,7 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onAdd, onU
         </div>
       )}
 
+      {/* 手動編輯表單 */}
       {showForm && (
         <div ref={formRef} className="bg-white p-10 rounded-[2.5rem] shadow-2xl border-4 border-slate-50 mb-10 animate-fade-in">
           <div className="flex justify-between items-start mb-8">
@@ -306,10 +357,11 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({ questions, onAdd, onU
         </div>
       )}
 
+      {/* 列表區 */}
       <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-50 overflow-hidden">
         <div className="px-10 py-8 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="font-black text-xl text-slate-800 kid-font">已辨識/儲存的題目 ({questions.length})</h3>
-          <button onClick={() => onDelete('all')} className="text-red-400 text-xs hover:underline">清空暫存題庫</button>
+          <h3 className="font-black text-xl text-slate-800 kid-font">題庫內容 ({questions.length})</h3>
+          <button onClick={() => onDelete('all')} className="text-red-400 text-xs hover:underline">清空題庫</button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">

@@ -3,6 +3,7 @@ export type Language = 'EN' | 'ZH';
 
 export const translations = {
   EN: {
+    // ... 保持現有翻譯
     appName: "Grammar Explorer",
     learnerMode: "Learner Mode",
     parentMode: "Parent Mode",
@@ -88,9 +89,13 @@ export const translations = {
     syncError: "Sync Failed. Please check your credentials.",
     cloudSyncDesc: "Connect to your personal Google Sheet to manage questions remotely.",
     sheetRange: "Sheet Range (e.g. Sheet1!A2:F)",
-    copyOcrCsv: "Copy as CSV for Sheets"
+    copyOcrCsv: "Copy as CSV for Sheets",
+    importConfig: "Import Config File",
+    importConfigDesc: "Upload a text file containing API Key and Sheet ID",
+    invalidConfig: "Invalid configuration format."
   },
   ZH: {
+    // ... 保持現有翻譯
     appName: "語法探險家",
     learnerMode: "學生模式",
     parentMode: "家長模式",
@@ -176,6 +181,9 @@ export const translations = {
     syncError: "同步失敗，請檢查金鑰或 ID 是否正確。",
     cloudSyncDesc: "連結您的個人 Google 表格，實現跨裝置遠端管理題庫。",
     sheetRange: "資料範圍 (例如 Sheet1!A2:F)",
-    copyOcrCsv: "複製為表格格式 (CSV)"
+    copyOcrCsv: "複製為表格格式 (CSV)",
+    importConfig: "匯入設定檔",
+    importConfigDesc: "上傳包含 API Key 和 Sheet ID 的文字檔",
+    invalidConfig: "設定檔格式不正確。"
   }
 };

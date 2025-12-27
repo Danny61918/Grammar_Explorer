@@ -2,13 +2,24 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Question, QuestionType } from "../types";
 
-// Note: Initialization is moved inside functions to ensure the most recent API key from process.env is used.
+// 輔助函式：取得目前可用的 API Key
+const getApiKey = () => {
+  const saved = localStorage.getItem('ge_cloud_settings');
+  if (saved) {
+    const settings = JSON.parse(saved);
+    if (settings.apiKey) return settings.apiKey;
+  }
+  return process.env.API_KEY || "";
+};
 
-// Optimization: Use Flash model for generation to save tokens and improve speed.
-// Grammar generation is a basic text task well within Flash capabilities.
 export const generateAIQuestions = async (baseQuestions: Question[], category: string): Promise<Question[]> => {
-  /* Initialize AI inside the function to use the correct API key from process.env */
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    console.error("No API Key found");
+    return [];
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   const prompt = `
     Based on the following school grammar questions in the category "${category}", generate 5 NEW and DIFFERENT questions.
     Keep the same grammar focus and difficulty level suitable for children.
@@ -62,10 +73,11 @@ export const generateAIQuestions = async (baseQuestions: Question[], category: s
   }
 };
 
-// Optimization: Use Flash model for single question analysis.
 export const analyzeQuestion = async (content: string): Promise<Partial<Question>> => {
-  /* Initialize AI inside the function to use the correct API key from process.env */
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = getApiKey();
+  if (!apiKey) return {};
+
+  const ai = new GoogleGenAI({ apiKey });
   const prompt = `
     Analyze this English grammar question for a primary school student: "${content}"
     Provide metadata: type (MCQ, PHRASE, ERROR, TF), options (if MCQ), answer, explanation (EN+ZH), and category.
@@ -100,8 +112,10 @@ export const analyzeQuestion = async (content: string): Promise<Partial<Question
 };
 
 export const extractQuestionsFromImage = async (base64Image: string): Promise<Question[]> => {
-  /* Initialize AI inside the function to use the correct API key from process.env */
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error("API Key missing");
+
+  const ai = new GoogleGenAI({ apiKey });
   const prompt = `
     Analyze this image of an English grammar worksheet. 
     Extract all questions into JSON format.
